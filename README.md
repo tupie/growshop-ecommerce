@@ -1,1 +1,5 @@
-GrowShop Ecommerce - Proyecto Fullstack (Django + Astro)
+# 🌱 GrowShop E-commerce
+
+E-commerce SEO-first ultrarrápido con **Django REST + Astro**.
+
+## Estructura
