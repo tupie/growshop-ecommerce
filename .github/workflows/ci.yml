@@ -14,7 +14,7 @@ jobs:
   backend:
     name: Backend (Django/DRF)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('backend/**') != '' }}
+    if: ${{ exists('backend/') }}
     defaults:
       run:
         working-directory: backend
@@ -67,7 +67,7 @@ jobs:
   frontend:
     name: Frontend (Astro)
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('frontend/**') != '' }}
+    if: ${{ exists('frontend/') }}
     defaults:
       run:
         working-directory: frontend
