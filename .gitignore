@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+.env
+
+# Node / Astro
+node_modules/
+dist/
+.cache/
+
+# Sistema
+.DS_Store
+*.log
+
+# Virtual environments
+*.lock
