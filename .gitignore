@@ -22,3 +22,5 @@ __pycache__/
 node_modules/
 *.sqlite3
 .DS_Store
+*.tar.gz
+backups_*.tar.gz
