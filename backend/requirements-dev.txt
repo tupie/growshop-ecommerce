@@ -1,7 +1,14 @@
+# Lint y formato
 black
 ruff
+bandit
+
+# Hooks
 pre-commit
+
+# Tests
 pytest
 pytest-django
+
+# Seguridad
 pip-audit
-bandit
