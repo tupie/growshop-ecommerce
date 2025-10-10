@@ -1,0 +1,80 @@
+---
+name: "🚦 CI - Backend & Frontend"
+
+on:
+  push:
+    branches:
+      - "main"
+      - "dev"
+  pull_request:
+    branches:
+      - "main"
+      - "dev"
+
+jobs:
+  backend:
+    name: "🐍 Backend (Django REST)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "🧰 Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: "📦 Install deps"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f requirements-dev.txt ]; then \
+            pip install -r requirements-dev.txt; \
+          fi
+
+      - name: "🧹 Code quality"
+        run: |
+          black --check .
+          ruff check .
+
+      - name: "🧪 Tests"
+        run: pytest -q
+
+      - name: "🔒 Lock consistency"
+        run: |
+          pip freeze > requirements.ci.lock
+          diff -u requirements.lock requirements.ci.lock || (
+            echo "❌ Lock file desactualizado. Ejecuta:" && \
+            echo "pip freeze > requirements.lock" && exit 1
+          )
+
+  frontend:
+    name: "⚡ Frontend (Astro)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "🧰 Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: "📦 Install & build"
+        run: |
+          npm ci
+          npm run build
+
+      - name: "🔒 Lock consistency"
+        run: |
+          git diff --exit-code package-lock.json || (
+            echo "❌ package-lock.json no actualizado" && exit 1
+          )
