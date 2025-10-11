@@ -12,3 +12,4 @@ pytest-django
 
 # Seguridad
 pip-audit
+python-dotenv
