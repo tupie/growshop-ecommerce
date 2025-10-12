@@ -32,6 +32,7 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
+    image = models.ImageField(upload_to="products/", blank=True, null=True)
     meta_title = models.CharField(max_length=150, blank=True)
     meta_description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,6 +86,33 @@ class OrderItem(models.Model):
 
     def subtotal(self):
         return self.quantity * self.price
+
+    def __str__(self):
+        return f"{self.quantity} × {self.product.name}"
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="cart")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def total(self):
+        return sum(item.subtotal() for item in self.items.all())
+
+    def __str__(self):
+        return f"Cart ({self.user.username})"
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("cart", "product")
+
+    def subtotal(self):
+        return self.product.price * self.quantity
 
     def __str__(self):
         return f"{self.quantity} × {self.product.name}"

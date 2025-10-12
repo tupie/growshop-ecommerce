@@ -9,6 +9,8 @@ pre-commit
 # Tests
 pytest
 pytest-django
+pytest-cov
 
 # Seguridad
 pip-audit
+python-dotenv

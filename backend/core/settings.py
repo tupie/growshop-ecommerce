@@ -2,6 +2,8 @@
 Secure Django settings for GrowShop e-commerce.
 """
 
+import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -43,9 +45,14 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "csp",
+    # Local apps
+    "jwtcheck",
     "shop",
 ]
 
+# --------------------------------------------------
+# Middleware
+# --------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -93,22 +100,45 @@ DATABASES = {
 }
 
 # --------------------------------------------------
+# Switch to SQLite for tests or CI (no CREATEDB needed)
+# --------------------------------------------------
+USE_SQLITE_FOR_TESTS = (
+    "test" in sys.argv
+    or "pytest" in sys.argv
+    or os.environ.get("GITHUB_ACTIONS") == "true"
+    or os.environ.get("USE_SQLITE_FOR_TESTS") == "1"
+)
+
+if USE_SQLITE_FOR_TESTS:
+    print("⚙️  Usando SQLite para entorno de test...")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
+
+# --------------------------------------------------
 # REST Framework
 # --------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 12,
-    "DEFAULT_FILTER_BACKENDS": (
-        "django_filters.rest_framework.DjangoFilterBackend",
-        "rest_framework.filters.OrderingFilter",
-        "rest_framework.filters.SearchFilter",
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "1000/day",
+        "anon": "100/day",
+    },
 }
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "GrowShop API",
     "DESCRIPTION": "REST API for GrowShop e-commerce",
@@ -117,17 +147,18 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --------------------------------------------------
-# JWT Config
+# JWT Config (SimpleJWT)
 # --------------------------------------------------
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
         minutes=env.int("ACCESS_TOKEN_LIFETIME_MINUTES", default=15)
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=env.int("REFRESH_TOKEN_LIFETIME_DAYS", default=7)
+        days=env.int("ACCESS_TOKEN_LIFETIME_DAYS", default=7)
     ),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
@@ -144,7 +175,7 @@ if DEBUG:
                 "https://cdn.jsdelivr.net",
                 "blob:",
             ),
-            "worker-src": ("'self'", "blob:"),  # <-- permite Redoc
+            "worker-src": ("'self'", "blob:"),  # permite Redoc
             "style-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"),
             "img-src": ("'self'", "data:", "https://cdn.jsdelivr.net"),
         }
@@ -179,6 +210,8 @@ CORS_ALLOW_CREDENTIALS = True
 # --------------------------------------------------
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # --------------------------------------------------
 # Internationalization
@@ -192,3 +225,11 @@ USE_TZ = True
 # Default primary key
 # --------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if "test" in sys.argv or os.environ.get("USE_SQLITE_FOR_TESTS") == "1":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "test_db.sqlite3",
+        }
+    }
