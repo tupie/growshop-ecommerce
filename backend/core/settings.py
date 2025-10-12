@@ -18,7 +18,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Environment
 # --------------------------------------------------
 env = environ.Env()
-environ.Env.read_env(BASE_DIR / ".env.local")  # safe local override
+
+# Detect test or CI environment early
+IS_TEST_ENV = (
+    "pytest" in sys.argv or "test" in sys.argv or os.getenv("GITHUB_ACTIONS") == "true"
+)
+
+# Load .env.test for tests, otherwise .env.local
+if IS_TEST_ENV and (BASE_DIR / ".env.test").exists():
+    print("🧪 Cargando entorno de test desde .env.test")
+    environ.Env.read_env(BASE_DIR / ".env.test")
+else:
+    environ.Env.read_env(BASE_DIR / ".env.local")
+
+# Explicitly expose the flag to Python's os.environ
+if env.bool("USE_SQLITE_FOR_TESTS", default=False):
+    os.environ["USE_SQLITE_FOR_TESTS"] = "1"
 
 # --------------------------------------------------
 # Core settings
@@ -103,11 +118,13 @@ DATABASES = {
 # Switch to SQLite for tests or CI (no CREATEDB needed)
 # --------------------------------------------------
 USE_SQLITE_FOR_TESTS = (
-    "test" in sys.argv
+    os.getenv("USE_SQLITE_FOR_TESTS") == "1"
     or "pytest" in sys.argv
-    or os.environ.get("GITHUB_ACTIONS") == "true"
-    or os.environ.get("USE_SQLITE_FOR_TESTS") == "1"
+    or "test" in sys.argv
+    or os.getenv("GITHUB_ACTIONS") == "true"
 )
+
+print(f"🔍 USE_SQLITE_FOR_TESTS={os.getenv('USE_SQLITE_FOR_TESTS')} | argv={sys.argv}")
 
 if USE_SQLITE_FOR_TESTS:
     print("⚙️  Usando SQLite para entorno de test...")
